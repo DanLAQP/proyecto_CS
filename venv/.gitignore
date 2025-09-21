@@ -1,0 +1,37 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.sqlite3
+env/
+venv/
+.env
+
+# Django
+*.log
+*.pot
+*.py[cod]
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+# Si usas celery:
+celerybeat-schedule
+
+# Node / React
+node_modules/
+build/
+dist/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db

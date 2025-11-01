@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from .models import Usuario, AppSingleton
+from .notifications import NotificationCenter
+from django.http import StreamingHttpResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,14 @@ class LoginView(APIView):
                 cfg = AppSingleton.load()
                 cfg.increment_logins(1)
                 logger.info(f"Incremented AppSingleton.login_count -> {cfg.login_count}")
+                # notify observers about the successful login
+                try:
+                    NotificationCenter.notify('login', {
+                        'username': user.username,
+                        'login_count': cfg.login_count,
+                    })
+                except Exception:
+                    logger.exception('Failed to notify observers')
             except Exception:
                 # No queremos bloquear el login por fallos en el singleton
                 logger.exception("Error updating AppSingleton")
@@ -83,3 +93,23 @@ class AppSingletonView(APIView):
         except Exception:
             logger.exception("Error loading AppSingleton")
             return Response({"error": "Could not load app singleton"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def notifications_stream(request):
+    """Simple Server-Sent Events endpoint that streams notifications.
+
+    This subscribes to the in-process NotificationCenter and streams events
+    as text/event-stream. It's suitable for development or single-process
+    deployments. In production use a dedicated pub/sub.
+    """
+    q = NotificationCenter.subscribe()
+
+    def event_generator():
+        try:
+            while True:
+                msg = q.get()
+                yield f"data: {msg}\n\n"
+        finally:
+            NotificationCenter.unsubscribe(q)
+
+    return StreamingHttpResponse(event_generator(), content_type='text/event-stream')

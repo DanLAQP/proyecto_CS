@@ -3,7 +3,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
-from .models import Usuario
+from .models import Usuario, AppSingleton
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Login para todos los usuarios
 class LoginView(APIView):
@@ -15,11 +18,24 @@ class LoginView(APIView):
 
         if user:
             login(request, user)  # inicia la sesión
+            # Usar el singleton para llevar un contador de logins
+            try:
+                cfg = AppSingleton.load()
+                cfg.increment_logins(1)
+                logger.info(f"Incremented AppSingleton.login_count -> {cfg.login_count}")
+            except Exception:
+                # No queremos bloquear el login por fallos en el singleton
+                logger.exception("Error updating AppSingleton")
+
             return Response({
                 "message": "Login exitoso",
                 "username": user.username,
                 "rol": user.rol,
                 "is_staff": user.is_staff,
+                "app_singleton": {
+                    "site_name": cfg.site_name if 'cfg' in locals() else None,
+                    "login_count": cfg.login_count if 'cfg' in locals() else None,
+                }
             })
         else:
             return Response(
@@ -45,3 +61,25 @@ class CreateUserView(APIView):
         user = Usuario.objects.create_user(username=username, password=password, rol=rol)
         user.save()
         return Response({"message": f"Usuario {username} creado con rol {rol}"}, status=status.HTTP_201_CREATED)
+
+
+class AppSingletonView(APIView):
+    """Read-only endpoint to fetch the current AppSingleton state.
+
+    This endpoint forces a DB refresh so clients always get the latest value
+    (useful when multiple processes may update the singleton).
+    """
+
+    permission_classes = []
+
+    def get(self, request):
+        try:
+            cfg = AppSingleton.load(force_refresh=True)
+            return Response({
+                "site_name": cfg.site_name,
+                "login_count": cfg.login_count,
+                "updated": cfg.updated,
+            })
+        except Exception:
+            logger.exception("Error loading AppSingleton")
+            return Response({"error": "Could not load app singleton"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import AppSingleton
+from .models import AppSingleton, Usuario
 
-
+admin.site.register(Usuario)
 @admin.register(AppSingleton)
 class AppSingletonAdmin(admin.ModelAdmin):
 	readonly_fields = ('pk', 'updated')

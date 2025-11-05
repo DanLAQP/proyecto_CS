@@ -5,6 +5,10 @@
 __pycache__/
 local_settings.py
 db.sqlite3
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
 
 # Virtual Environment
 .env
@@ -20,3 +24,9 @@ Thumbs.db
 .coverage
 .tox/
 .eggs/
+
+# === Archivos de cache ===
+*.bak
+*.tmp
+*.pid
+*.seed

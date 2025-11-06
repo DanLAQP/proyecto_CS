@@ -39,7 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',             # DRF
     'corsheaders',                # CORS
-    'accounts',                   # Nuestra app
+    # Nuestra apps
+    'accounts',                   
+    'clinica',
+    'ordenes',
+    'catalogo',
 ]
 
 MIDDLEWARE = [
